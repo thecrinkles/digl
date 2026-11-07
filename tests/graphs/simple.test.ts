@@ -1,7 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { digl, type Edge } from '../../src/index.ts';
-import { score } from '../../src/score.ts';
 
 const edges: Edge[] = [
   { source: '1', target: '2' },
@@ -31,51 +30,25 @@ test('Simple graph', () => {
   assert.deepEqual(result, [
     ['1'],
     ['2'],
-    ['3'],
-    ['4', '7'],
-    ['8', '9'],
-    ['5', '10'],
+    [null, '3'],
+    ['4', null, '7'],
+    ['8', null, null, '9', null],
+    ['5', null, '10', null],
     ['6'],
   ]);
-
-  assert.equal(score(result, edges), 0);
 });
 
-test('Simple graph - solitary nodes', () => {
-  const result = digl(edges, { solitary: ['8'] })[0];
-
-  assert.deepEqual(result, [
-    ['1'],
-    ['2'],
-    ['3'],
-    ['4', '7'],
-    ['8'],
-    ['9'],
-    ['5', '10'],
-    ['6'],
+// https://github.com/thecrinkles/digl/issues/15
+test('Simple graph - placeholder for an edge skipping a rank', () => {
+  const result = digl([
+    { source: '1', target: '2' },
+    { source: '1', target: '3' },
+    { source: '2', target: '3' },
   ]);
-
-  assert.equal(score(result, edges), 0);
+  assert.deepEqual(result, [[['1'], ['2', null], ['3']]]);
 });
 
-test('Simple graph - solitary node alone in its rank', () => {
-  const result = digl([{ source: '1', target: '2' }], { solitary: ['1'] });
-  assert.deepEqual(result, [[['1'], ['2']]]);
-});
-
-test('Simple graph - solitary nodes in the same rank', () => {
-  const result = digl(
-    [
-      { source: 'r', target: 'a' },
-      { source: 'r', target: 'b' },
-      { source: 'r', target: 'c' },
-    ],
-    { solitary: ['a', 'b'] },
-  );
-  assert.deepEqual(result, [[['r'], ['a'], ['b'], ['c']]]);
-});
-
-test('Simple graph - readonly input and empty config', () => {
+test('Simple graph - readonly input', () => {
   const input = [{ source: '1', target: '2' }] as const;
-  assert.deepEqual(digl(input, {}), [[['1'], ['2']]]);
+  assert.deepEqual(digl(input), [[['1'], ['2']]]);
 });

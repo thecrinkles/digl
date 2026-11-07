@@ -36,9 +36,27 @@ for (const seed of [1, 2, 3, 4, 5]) {
     const layouts = digl(edges);
 
     // every node exactly once
-    const placed = layouts.flat(2).sort();
+    const slots = layouts.flat(2);
+    const placed = slots.filter((slot) => slot !== null).sort();
     const nodes = [...new Set(edges.flatMap((e) => [e.source, e.target]))];
     assert.deepEqual(placed, nodes.sort());
+
+    // one placeholder in every rank an edge passes through
+    const rankOf = new Map<string, number>();
+    for (const layout of layouts)
+      layout.forEach((rank, r) =>
+        rank.forEach((n) => n !== null && rankOf.set(n, r)),
+      );
+    const passing = edges.reduce(
+      (sum, e) =>
+        sum +
+        Math.max(
+          0,
+          Math.abs(rankOf.get(e.source)! - rankOf.get(e.target)!) - 1,
+        ),
+      0,
+    );
+    assert.equal(slots.filter((slot) => slot === null).length, passing);
 
     // no empty ranks, and no edge between two nodes of the same rank
     for (const layout of layouts) {

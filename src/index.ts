@@ -1,18 +1,19 @@
 import { optimize } from './optimize.ts';
-import type { Config, Edge, Layout, Rank } from './types.js';
+import type { Edge, Layout } from './types.js';
 
-export type { Config, Edge, Layout, Rank } from './types.js';
+export type { Edge, Layout, Rank } from './types.js';
+
+// A node id, or a placeholder for an edge passing through a rank
+type Slot = string | symbol;
+type Graph = { ranks: Slot[][]; segments: { source: Slot; target: Slot }[] };
 
 // Lays out each connected graph in `edges` as ranks:
 // 1. Depth-first search from nodes without incoming edges (then from any node
 //    not reached yet), ignoring edges that close a cycle.
 // 2. Rank every node by its longest path from a start node.
-// 3. Give solitary nodes a rank of their own.
-// 4. Reorder nodes within ranks to reduce crossing edges.
-export function digl(
-  edges: readonly Edge[],
-  { solitary = [] }: Config = {},
-): Layout[] {
+// 3. Add a placeholder to every rank an edge passes through.
+// 4. Reorder each rank to reduce crossing edges.
+export function digl(edges: readonly Edge[]): Layout[] {
   const nodes = [...new Set(edges.flatMap((e) => [e.source, e.target]))];
   const next = new Map<string, string[]>(nodes.map((n) => [n, []]));
   for (const e of edges) next.get(e.source)?.push(e.target);
@@ -46,12 +47,12 @@ export function digl(
     finished.push(n);
   };
 
-  const layouts = new Map<string, Layout>();
+  const graphs = new Map<string, Graph>();
   const targets = new Set(edges.map((e) => e.target));
   const sources = nodes.filter((n) => !targets.has(n));
   for (const n of [...sources, ...nodes]) {
     if (state.has(n)) continue;
-    if (!layouts.has(find(n))) layouts.set(find(n), []);
+    if (!graphs.has(find(n))) graphs.set(find(n), { ranks: [], segments: [] });
     visit(n);
   }
 
@@ -63,21 +64,30 @@ export function digl(
       rank.set(m, Math.max(rank.get(m) ?? 0, r));
   }
 
-  for (const n of nodes) {
-    const layout = layouts.get(find(n)) ?? [];
-    (layout[rank.get(n) ?? 0] ??= []).push(n);
+  // Every node is in a graph: each graph got registered by its first DFS root
+  const graphOf = (n: string) => graphs.get(find(n))!;
+  for (const n of nodes) (graphOf(n).ranks[rank.get(n) ?? 0] ??= []).push(n);
+
+  // Split each edge into segments between neighbouring ranks, with a
+  // placeholder in every rank it passes through.
+  for (const { source, target } of edges) {
+    const { ranks, segments } = graphOf(source);
+    const from = rank.get(source) ?? 0;
+    const to = rank.get(target) ?? 0;
+    const step = Math.sign(to - from);
+    let previous: Slot = source;
+    for (let r = from + step; r !== to; r += step) {
+      const placeholder = Symbol();
+      ranks[r].push(placeholder);
+      segments.push({ source: previous, target: placeholder });
+      previous = placeholder;
+    }
+    segments.push({ source: previous, target });
   }
 
-  return [...layouts.values()].map((layout) =>
-    optimize(splitSolitary(layout, solitary), edges),
+  return [...graphs.values()].map(({ ranks, segments }) =>
+    optimize(ranks, segments).map((rank) =>
+      rank.map((slot) => (typeof slot === 'string' ? slot : null)),
+    ),
   );
-}
-
-// Every solitary node gets its own rank, placed before the rest of its rank.
-function splitSolitary(ranks: Rank[], solitary: readonly string[]): Rank[] {
-  return ranks.flatMap((rank) => {
-    const alone = rank.filter((n) => solitary.includes(n)).map((n) => [n]);
-    const rest = rank.filter((n) => !solitary.includes(n));
-    return rest.length ? [...alone, rest] : alone;
-  });
 }

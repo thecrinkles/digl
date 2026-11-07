@@ -84,7 +84,7 @@ test('Multiple graphs - one cyclic', () => {
   const result = digl(edges);
   assert.deepEqual(result, [
     [['4'], ['3']],
-    [['•r'], ['0'], ['1'], ['2']],
+    [['•r'], ['0', null, null], ['1', null], ['2']],
   ]);
   assert.equal(score(result[0], edges), 0);
   assert.equal(score(result[1], edges), 0);
