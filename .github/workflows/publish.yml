@@ -5,29 +5,20 @@ on:
     types: [created]
 
 jobs:
-  test:
+  publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm trusted publishing; falls back to NODE_AUTH_TOKEN
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
-          node-version: 18
-      - run: yarn
-      - run: yarn test
-
-  publish-npm:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
-        with:
-          node-version: 18
-          registry-url: https://registry.npmjs.org/
-      - name: yarn publish
-        run: |
-          yarn config set //registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN
-          yarn
-          npm publish --access public
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install
+      - run: pnpm test
+      - run: npm publish --access public # prepack builds dist
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTOMATION_TOKEN }}

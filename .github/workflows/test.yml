@@ -6,9 +6,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
-          node-version: 18
-      - run: yarn
-      - run: yarn test
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install
+      - run: pnpm validate
