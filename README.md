@@ -10,45 +10,46 @@ A small JavaScript library that allows you to create visual layout of directed g
 
 ## Getting started
 
-```js
-import { digl } from '@crinkles/digl';
+```ts
+import { digl, type Edge, type Layout } from '@crinkles/digl';
 
-const edges = [{ source: '1', target: '2' }];
-const ranks = digl(edges, { solitary: [] });
+const edges: Edge[] = [{ source: '1', target: '2' }];
+const layouts: Layout[] = digl(edges);
 // [[['1'], ['2']]]
 ```
 
+`digl` returns one `Layout` per connected graph in `edges`. A `Layout` is a list of ranks (rows), and each `Rank` is a list of node IDs in display order. Every node appears exactly once.
+
 ## Configuration
 
-- `solitary: string[]`: an array of node IDs (corresponding to the source/target in the edges) that should be solitary within a rank.
+- `solitary?: string[]`: node IDs (as used in the edges) that each get a rank of their own.
 
 ## How it works
 
-The algorithm used is based on the [GraphViz](https://www.graphviz.org/Documentation/TSE93.pdf), but a simplified version. It consists of several steps:
+The algorithm is a simplified version of the one used by [GraphViz](https://www.graphviz.org/Documentation/TSE93.pdf):
 
-1. Determine all the starting nodes (if no starting node can be found as it is part of a loop, the first node in found is used).
-2. Each starting node gets its own graph representation, or ranking. This means that for each starting node, determine the _ranking_ of each node accessible from the start node. This is done based on the "longest path from source" algorithm. The start node is placed in _rank 0_. The final output will be an array of "graphs" or ranks.
-3. Determine if there is overlap of nodes between the defined graphs. If so, the graphs are merged and a new ranking for all nodes is determined for the new graph. This happens iterative until no overlap is found between graphs anymore.
-4. Determine for each graphs the score in crossing edges between ranks and within a rank. If no crossings are found, the graphs are optimal.
-5. For each graph, switch nodes within/between ranks, and see if we improve the score of the graph. If the score did not improve, the graph is flagged not improveable (local optimum), and the original ranking is maintained.
-6. If we improved the score, repeat step 3 untill 6 with the new defined graph.
+1. Split the edges into connected graphs. Each becomes its own layout.
+2. Break cycles: a depth-first search starts from every node without incoming edges, then from any node not reached yet. Edges that lead back to a node still being visited close a cycle, and are ignored for ranking.
+3. Rank every node by its longest path from a start node. Start nodes are in rank 0.
+4. Give each solitary node a rank of its own, placed before the rest of its rank.
+5. Reduce crossing edges: swap neighbouring nodes within a rank, and keep the swap when the score does not get worse. This repeats until there are no crossings, or until a pass without improvement, followed by one extra pass, changes nothing.
 
-### Score the graph based on its ranks
+Ranking takes time proportional to the number of nodes plus edges.
 
-All 'ranks' can be scored with a number. The represents the number of visual crossing edges a graph based on the ranks will have, plus the amount of edges crossing over a node. Therefore, the lower the score, the better. The scores are determined by:
+### Score
 
-- Counting all edges that have a source and target within a single rank, which are not adjecent to each other in the rank.
-- Go through all combinations of ranks, and:
-  - Go through all combinations of ranks
-  - Discard all edges that have a source and target within the same rank
-  - Determine all edges, regardless of the direction, that have a source and target within these ranks
-  - For combination of edges, determine if they cross
+The score of a layout is the number of edge pairs that cross. Two edges between the same two ranks cross when their ends are in opposite order on those ranks: with positions `(x1, y1)` and `(x2, y2)`, they cross when `(x1 - x2) * (y1 - y2) < 0`. Edge direction does not matter.
 
-```js
-// Note this is a part of the logic
-let _score = 0;
-if (e1.x > e2.x && e1.t < e2.t) _score++;
-```
+Edges that skip ranks are compared by their two end ranks only. Unlike GraphViz, digl does not add placeholder nodes for them in the ranks in between, so crossings there are not counted.
+
+## Upgrading from v2
+
+- Types are now exported: `Edge`, `Rank`, `Layout` and `Config`. `Layout` replaces `Graph`, and `digl` returns `Layout[]`.
+- `Rank` is `string[]` (was `(string | null)[]`), and `solitary` is optional.
+- Ranking no longer lists every path, which made v2 exponentially slow on branching graphs. Layouts of acyclic graphs are unchanged. Nodes in a cycle can now be placed in different ranks, where v2 sometimes put them in the same rank.
+- Crossings are counted correctly when two ranks hold more than 10 nodes. v2 compared positions as text, so layouts of wide graphs can change, with fewer crossings.
+- Two solitary nodes in the same rank each get their own rank, and splitting a rank never leaves an empty rank.
+- Edges within a rank are no longer scored; the ranking never produces them.
 
 ## Examples
 
@@ -168,31 +169,28 @@ const result = digl(edges);
 ![](./img/positioning.png)
 
 ```ts
-export default function positioning(
-  config: Config,
-  nodes: Node[],
-  ranks: Rank[],
-): Layout {
-  const _nodes: PositionedNode[] = [];
-  const _h = config.orientation === 'horizontal';
+import type { Layout } from '@crinkles/digl';
 
-  ranks.forEach((r, i) => {
-    const xStart = _h
-      ? 2 * config.width * i
-      : -0.5 * (r.length - 1) * 2 * config.width;
-    const yStart = _h
-      ? -0.5 * (r.length - 1) * 2 * config.height
-      : 2 * config.height * i;
+type Options = {
+  orientation: 'horizontal' | 'vertical';
+  width: number;
+  height: number;
+};
 
-    r.forEach((nodeId, nIndex) => {
-      const _node: Node = nodes.find((n) => n.id == nodeId) as Node;
-      if (!_node) return;
-      const x = _h ? xStart : xStart + 2 * config.width * nIndex;
-      const y = _h ? yStart + 2 * config.height * nIndex : yStart;
-      _nodes.push({ ..._node, x, y });
-    });
+// Centers every rank, leaving one node size of space between nodes
+export function positioning(layout: Layout, options: Options) {
+  const horizontal = options.orientation === 'horizontal';
+  const { width, height } = options;
+
+  return layout.flatMap((rank, i) => {
+    const xStart = horizontal ? 2 * width * i : -(rank.length - 1) * width;
+    const yStart = horizontal ? -(rank.length - 1) * height : 2 * height * i;
+
+    return rank.map((id, j) => ({
+      id,
+      x: horizontal ? xStart : xStart + 2 * width * j,
+      y: horizontal ? yStart + 2 * height * j : yStart,
+    }));
   });
-
-  return _nodes;
 }
 ```

@@ -1,5 +1,4 @@
-import { Edge } from '../../src/types';
-import { digl } from '../../src/';
+import { digl, type Edge } from '../../src';
 import { score } from '../../src/score';
 
 const edges: Edge[] = [
@@ -55,4 +54,26 @@ test('Simple graph - solitary nodes', () => {
   ]);
 
   expect(score(result, edges)).toBe(0);
+});
+
+test('Simple graph - solitary node alone in its rank', () => {
+  const result = digl([{ source: '1', target: '2' }], { solitary: ['1'] });
+  expect(result).toEqual([[['1'], ['2']]]);
+});
+
+test('Simple graph - solitary nodes in the same rank', () => {
+  const result = digl(
+    [
+      { source: 'r', target: 'a' },
+      { source: 'r', target: 'b' },
+      { source: 'r', target: 'c' },
+    ],
+    { solitary: ['a', 'b'] },
+  );
+  expect(result).toEqual([[['r'], ['a'], ['b'], ['c']]]);
+});
+
+test('Simple graph - readonly input and empty config', () => {
+  const input = [{ source: '1', target: '2' }] as const;
+  expect(digl(input, {})).toEqual([[['1'], ['2']]]);
 });

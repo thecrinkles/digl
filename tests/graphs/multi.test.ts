@@ -1,5 +1,4 @@
-import { Edge } from '../../src/types';
-import { digl } from '../../src/';
+import { digl, type Edge } from '../../src';
 import { score } from '../../src/score';
 
 test('Multiple graphs - independent', () => {
@@ -83,7 +82,7 @@ test('Multiple graphs - one cyclic', () => {
   const result = digl(edges);
   expect(result).toEqual([
     [['4'], ['3']],
-    [['•r'], ['0', '1'], ['2']],
+    [['•r'], ['0'], ['1'], ['2']],
   ]);
   expect(score(result[0], edges)).toBe(0);
   expect(score(result[1], edges)).toBe(0);

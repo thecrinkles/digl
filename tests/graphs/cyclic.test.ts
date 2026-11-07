@@ -1,5 +1,4 @@
-import { Edge } from '../../src/types';
-import { digl } from '../../src/';
+import { digl, type Edge } from '../../src';
 import { score } from '../../src/score';
 
 const edges: Edge[] = [

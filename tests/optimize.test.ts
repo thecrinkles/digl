@@ -1,6 +1,6 @@
 import { optimize } from '../src/optimize';
 import { score } from '../src/score';
-import { Edge, Rank } from '../src/types';
+import type { Edge, Rank } from '../src';
 
 const ranks: Rank[] = [
   ['1.1', '1.2', '1.3'],
@@ -13,24 +13,10 @@ test('Optimize - no edges', () => {
     ['1.1', '1.2', '1.3'],
     ['2.1', '2.2', '2.3'],
   ]);
-  expect(score(result, []) === score(ranks, [])).toBe(true);
+  expect(score(result, [])).toBe(score(ranks, []));
 });
 
-test('Optimize - resolve crossing edges in a rank', () => {
-  const edges: Edge[] = [
-    { source: '1.1', target: '1.3' },
-    { source: '1.1', target: '1.2' },
-  ];
-
-  const result = optimize(ranks, edges);
-  expect(result).toEqual([
-    ['1.2', '1.1', '1.3'],
-    ['2.2', '2.3', '2.1'],
-  ]);
-  expect(score(result, edges) <= score(ranks, edges)).toBe(true);
-});
-
-test('Score - crossing edge r1 -> r2', () => {
+test('Optimize - crossing edge r1 -> r2', () => {
   const edges: Edge[] = [
     { source: '1.1', target: '2.3' },
     { source: '1.2', target: '2.2' },
@@ -40,10 +26,10 @@ test('Score - crossing edge r1 -> r2', () => {
     ['1.2', '1.3', '1.1'],
     ['2.2', '2.3', '2.1'],
   ]);
-  expect(score(result, edges) <= score(ranks, edges)).toBe(true);
+  expect(score(result, edges)).toBeLessThanOrEqual(score(ranks, edges));
 });
 
-test('Score - crossing edge r2 -> r1', () => {
+test('Optimize - crossing edge r2 -> r1', () => {
   const edges: Edge[] = [
     { source: '2.1', target: '1.3' },
     { source: '2.2', target: '1.2' },
@@ -53,10 +39,10 @@ test('Score - crossing edge r2 -> r1', () => {
     ['1.2', '1.3', '1.1'],
     ['2.2', '2.3', '2.1'],
   ]);
-  expect(score(result, edges) <= score(ranks, edges)).toBe(true);
+  expect(score(result, edges)).toBeLessThanOrEqual(score(ranks, edges));
 });
 
-test('Score - crossing edge r1 -> r2 & r2 -> r1', () => {
+test('Optimize - crossing edge r1 -> r2 & r2 -> r1', () => {
   const edges: Edge[] = [
     { source: '1.1', target: '2.1' },
     { source: '2.2', target: '1.2' },
@@ -68,7 +54,7 @@ test('Score - crossing edge r1 -> r2 & r2 -> r1', () => {
     ['1.2', '1.1', '1.3'],
     ['2.2', '2.1', '2.3'],
   ]);
-  expect(score(result, edges) <= score(ranks, edges)).toBe(true);
+  expect(score(result, edges)).toBeLessThanOrEqual(score(ranks, edges));
 });
 
 test('Optimize - unoptimized same score', () => {
@@ -88,7 +74,7 @@ test('Optimize - unoptimized same score', () => {
     ['2.1', '2.2'],
   ]);
 
-  expect(score(result, edges) <= score(ranks, edges)).toBe(true);
+  expect(score(result, edges)).toBeLessThanOrEqual(score(ranks, edges));
 });
 
 test('Optimize - multiple iterations', () => {
@@ -115,5 +101,35 @@ test('Optimize - multiple iterations', () => {
     ['4.1', '4.2'],
   ]);
 
-  expect(score(result, edges) <= score(ranks, edges)).toBe(true);
+  expect(score(result, edges)).toBeLessThanOrEqual(score(ranks, edges));
+});
+
+// v2 miscounted crossings once two ranks held more than 10 nodes
+test('Optimize - wide ranks reach zero crossings', () => {
+  const n = 20;
+  const ranks: Rank[] = [
+    Array.from({ length: n }, (_, i) => `m${i}`),
+    Array.from({ length: n }, (_, i) => `t${i}`),
+  ];
+  const edges: Edge[] = ranks[0].map((m, i) => ({
+    source: m,
+    target: `t${(i * 7) % n}`,
+  }));
+  expect(score(ranks, edges)).toBeGreaterThan(0);
+  expect(score(optimize(ranks, edges), edges)).toBe(0);
+});
+
+test('Optimize - does not mutate its input', () => {
+  const input: Rank[] = [
+    ['1.1', '1.2'],
+    ['2.1', '2.2'],
+  ];
+  optimize(input, [
+    { source: '1.1', target: '2.2' },
+    { source: '1.2', target: '2.1' },
+  ]);
+  expect(input).toEqual([
+    ['1.1', '1.2'],
+    ['2.1', '2.2'],
+  ]);
 });

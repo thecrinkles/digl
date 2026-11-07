@@ -1,148 +1,83 @@
-import { Config, Edge, Rank, Node, Graph, Path } from './types';
 import { optimize } from './optimize';
+import type { Config, Edge, Layout, Rank } from './types';
 
-// Depth-First-Search (DFS) for an Directed Graph (cycles in paths are discarded)
-function getPathByNode(
-  nodeId: string,
-  edges: Edge[],
-  path: Path = [],
-  paths: Path[] = [],
-): Path[] {
-  const children = edges.filter((e) => e.source === nodeId);
+export type { Config, Edge, Layout, Rank } from './types';
 
-  // first check avoids cyclic paths
-  if (path.includes(nodeId)) paths.push(path);
-  else if (!children || children.length === 0) paths.push([...path, nodeId]);
-  else
-    children.map((c) =>
-      getPathByNode(c.target, edges, [...path, nodeId], paths),
-    );
+// Lays out each connected graph in `edges` as ranks:
+// 1. Depth-first search from nodes without incoming edges (then from any node
+//    not reached yet), ignoring edges that close a cycle.
+// 2. Rank every node by its longest path from a start node.
+// 3. Give solitary nodes a rank of their own.
+// 4. Reorder nodes within ranks to reduce crossing edges.
+export function digl(
+  edges: readonly Edge[],
+  { solitary = [] }: Config = {},
+): Layout[] {
+  const nodes = [...new Set(edges.flatMap((e) => [e.source, e.target]))];
+  const next = new Map<string, string[]>(nodes.map((n) => [n, []]));
+  for (const e of edges) next.get(e.source)?.push(e.target);
 
-  return paths.sort();
-}
+  // Connected graphs, via union-find
+  const parent = new Map(nodes.map((n) => [n, n]));
+  const find = (n: string): string => {
+    const p = parent.get(n) ?? n;
+    if (p === n) return n;
+    const root = find(p);
+    parent.set(n, root);
+    return root;
+  };
+  for (const e of edges) parent.set(find(e.source), find(e.target));
 
-// Funtction to get all nodes based on the edges
-function getNodesFromEdges(edges: Edge[]): Node[] {
-  const nodes: Node[] = [];
-  edges.forEach(({ source, target }) => {
-    if (!nodes.find((n) => n.id === source)) nodes.push({ id: source });
-    if (!nodes.find((n) => n.id === target)) nodes.push({ id: target });
-  });
-  return nodes;
-}
+  // Depth-first search; edges back to a node still being visited close a
+  // cycle and are left out of the ranking.
+  // ponytail: recursion depth = longest path; use an explicit stack if graphs
+  // ever reach ~10k nodes deep.
+  const state = new Map<string, 'open' | 'done'>();
+  const finished: string[] = [];
+  const kept = new Map<string, string[]>(nodes.map((n) => [n, []]));
+  const visit = (n: string) => {
+    state.set(n, 'open');
+    for (const m of next.get(n) ?? []) {
+      if (state.get(m) === 'open') continue;
+      kept.get(n)?.push(m);
+      if (!state.has(m)) visit(m);
+    }
+    state.set(n, 'done');
+    finished.push(n);
+  };
 
-// Function to get all paths grouped by source node
-function getPaths(edges: Edge[], nodes: Node[]): Path[][] {
-  const _paths: Path[][] = [];
-  const _nodes = nodes.map((n) => n.id);
-
-  function determinePaths(sources: string[]) {
-    sources.forEach((node) => _paths.push(getPathByNode(node, edges)));
-    const _usedNodes = Array.from(new Set([..._paths.flat().flat()]));
-    if (_usedNodes.length < nodes.length)
-      determinePaths([diff(_nodes, _usedNodes)[0]]);
+  const layouts = new Map<string, Layout>();
+  const targets = new Set(edges.map((e) => e.target));
+  const sources = nodes.filter((n) => !targets.has(n));
+  for (const n of [...sources, ...nodes]) {
+    if (state.has(n)) continue;
+    if (!layouts.has(find(n))) layouts.set(find(n), []);
+    visit(n);
   }
 
-  const _sources = _nodes.filter((n) => !edges.find((e) => e.target === n));
-  determinePaths(_sources);
-
-  return _paths;
-}
-
-// Union of two arrays
-function intersect<T>(a: T[], b: T[]): T[] {
-  const setA = new Set([...a]);
-  const setB = new Set([...b]);
-  const intersection = new Set([...setA].filter((x) => setB.has(x)));
-  return Array.from(intersection);
-}
-
-// Union of two arrays
-function diff<T>(a: T[], b: T[]): T[] {
-  const setA = new Set([...a]);
-  const setB = new Set([...b]);
-  const diff = new Set([...setA].filter((x) => !setB.has(x)));
-  return Array.from(diff);
-}
-
-// Ranks nodes in a rank, based on the longest path from the source
-function getRanking(nodes: Node[], paths: string[][]): Rank[] {
-  const ranks: Rank[] = new Array<Rank>(paths[0].length);
-
-  nodes.forEach((n) => {
-    const _paths = paths.filter((p) => p.includes(n.id));
-    if (!_paths.length) return;
-
-    const index = _paths.reduce((acc, path) => {
-      const i = path.findIndex((p) => p === n.id);
-      return i > acc ? i : acc;
-    }, 0);
-
-    ranks[index] = [...(ranks[index] || []), n.id];
-  });
-  return ranks;
-}
-
-// Aggregated function to determine the starting ranks for each node
-function applySolitaryConfig(ranks: Rank[], config: Config) {
-  // Find out if there are any nodes marked as "solitary"
-  // https://github.com/kevtiq/digl/issues/8
-  // These nodes are to be scheduled in a rank of their own
-  // if (!config.solitary) return ranks;
-  const _ranks: Rank[] = [];
-  ranks.forEach((rank) => {
-    const solitaries = rank.filter((n) =>
-      config.solitary.includes(n as string),
-    );
-    if (!solitaries.length) _ranks.push(rank);
-    else {
-      _ranks.push(solitaries);
-      _ranks.push(rank.filter((n) => !solitaries.includes(n)));
-    }
-  });
-
-  return _ranks;
-}
-
-// Recursive function to find overlap in graphs and merge ranks whenever
-// overlap exists
-function merge(paths: Path[][], nodes: Node[]): Path[][] {
-  const _paths: Path[][] = [];
-  const _merged: number[] = [];
-
-  for (let i = 0; i < paths.length; i++) {
-    // If i was already merged in a previous iteration, skip it
-    if (_merged.includes(i)) continue;
-    const _mergedpaths = [...paths[i]];
-    for (let j = i + 1; j < paths.length; j++) {
-      // If overlap is found, add it to the graph
-      if (intersect<string>(paths[i].flat(), paths[j].flat()).length) {
-        _mergedpaths.push(...paths[j]);
-        _merged.push(j);
-      }
-    }
-
-    _paths.push(_mergedpaths);
+  // Longest path, processing nodes in topological order
+  const rank = new Map<string, number>(nodes.map((n) => [n, 0]));
+  for (const n of finished.reverse()) {
+    const r = (rank.get(n) ?? 0) + 1;
+    for (const m of kept.get(n) ?? [])
+      rank.set(m, Math.max(rank.get(m) ?? 0, r));
   }
 
-  if (_paths.length === paths.length) return _paths;
-  return merge(_paths, nodes);
+  for (const n of nodes) {
+    const layout = layouts.get(find(n)) ?? [];
+    (layout[rank.get(n) ?? 0] ??= []).push(n);
+  }
+
+  return [...layouts.values()].map((layout) =>
+    optimize(splitSolitary(layout, solitary), edges),
+  );
 }
 
-// The entire heuristic for determining the auto layout of a graph
-export function digl(edges: Edge[], config: Config = { solitary: [] }): Graph {
-  const _nodes = getNodesFromEdges(edges);
-  if (!_nodes.length) return [];
-
-  // Find all source nodes and corresponding paths
-  const _paths = getPaths(edges, _nodes);
-
-  // Get the unoptimized ranking per starting node
-  const _graph = merge(_paths, _nodes).map((p) => getRanking(_nodes, p));
-
-  // Apply solitary nodes & optimize
-  return _graph.map((ranks) => {
-    const _ranks = config.solitary ? applySolitaryConfig(ranks, config) : ranks;
-    return optimize(_ranks, edges);
+// Every solitary node gets its own rank, placed before the rest of its rank.
+function splitSolitary(ranks: Rank[], solitary: readonly string[]): Rank[] {
+  return ranks.flatMap((rank) => {
+    const alone = rank.filter((n) => solitary.includes(n)).map((n) => [n]);
+    const rest = rank.filter((n) => !solitary.includes(n));
+    return rest.length ? [...alone, rest] : alone;
   });
 }
