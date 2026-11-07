@@ -1,10 +1,11 @@
-import type { Edge, Rank } from './types.js';
-
 // Number of edge pairs that cross. Two edges between the same pair of ranks
 // cross when their ends are in opposite order on those ranks. Edges within a
 // rank, or to nodes outside these ranks, are ignored.
-export function score(ranks: Rank[], edges: readonly Edge[]): number {
-  const at = new Map<string, [rank: number, pos: number]>();
+export function score<T>(
+  ranks: T[][],
+  edges: readonly { source: T; target: T }[],
+): number {
+  const at = new Map<T, [rank: number, pos: number]>();
   ranks.forEach((rank, r) => rank.forEach((n, i) => at.set(n, [r, i])));
 
   const lines = new Map<string, [top: number, bottom: number][]>();

@@ -109,7 +109,7 @@ test('Optimize - multiple iterations', () => {
 // v2 miscounted crossings once two ranks held more than 10 nodes
 test('Optimize - wide ranks reach zero crossings', () => {
   const n = 20;
-  const ranks: Rank[] = [
+  const ranks: string[][] = [
     Array.from({ length: n }, (_, i) => `m${i}`),
     Array.from({ length: n }, (_, i) => `t${i}`),
   ];

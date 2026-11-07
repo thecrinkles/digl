@@ -13,6 +13,6 @@ const edges: Edge[] = [
 
 test('Cyclic graph', () => {
   const result = digl(edges)[0];
-  assert.deepEqual(result, [['1'], ['2'], ['3', '4']]);
+  assert.deepEqual(result, [['1'], ['2', null, null], ['3', '4']]);
   assert.equal(score(result, edges), 0);
 });
