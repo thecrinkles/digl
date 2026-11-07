@@ -1,5 +1,7 @@
-import { digl, type Edge } from '../../src';
-import { score } from '../../src/score';
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { digl, type Edge } from '../../src/index.ts';
+import { score } from '../../src/score.ts';
 
 const edges: Edge[] = [
   { source: '1', target: '2' },
@@ -21,12 +23,12 @@ const edges: Edge[] = [
 
 test('Simple graph - empty edges', () => {
   const result = digl([]);
-  expect(result).toEqual([]);
+  assert.deepEqual(result, []);
 });
 
 test('Simple graph', () => {
   const result = digl(edges)[0];
-  expect(result).toEqual([
+  assert.deepEqual(result, [
     ['1'],
     ['2'],
     ['3'],
@@ -36,13 +38,13 @@ test('Simple graph', () => {
     ['6'],
   ]);
 
-  expect(score(result, edges)).toBe(0);
+  assert.equal(score(result, edges), 0);
 });
 
 test('Simple graph - solitary nodes', () => {
   const result = digl(edges, { solitary: ['8'] })[0];
 
-  expect(result).toEqual([
+  assert.deepEqual(result, [
     ['1'],
     ['2'],
     ['3'],
@@ -53,12 +55,12 @@ test('Simple graph - solitary nodes', () => {
     ['6'],
   ]);
 
-  expect(score(result, edges)).toBe(0);
+  assert.equal(score(result, edges), 0);
 });
 
 test('Simple graph - solitary node alone in its rank', () => {
   const result = digl([{ source: '1', target: '2' }], { solitary: ['1'] });
-  expect(result).toEqual([[['1'], ['2']]]);
+  assert.deepEqual(result, [[['1'], ['2']]]);
 });
 
 test('Simple graph - solitary nodes in the same rank', () => {
@@ -70,10 +72,10 @@ test('Simple graph - solitary nodes in the same rank', () => {
     ],
     { solitary: ['a', 'b'] },
   );
-  expect(result).toEqual([[['r'], ['a'], ['b'], ['c']]]);
+  assert.deepEqual(result, [[['r'], ['a'], ['b'], ['c']]]);
 });
 
 test('Simple graph - readonly input and empty config', () => {
   const input = [{ source: '1', target: '2' }] as const;
-  expect(digl(input, {})).toEqual([[['1'], ['2']]]);
+  assert.deepEqual(digl(input, {}), [[['1'], ['2']]]);
 });

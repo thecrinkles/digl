@@ -1,5 +1,5 @@
-import { score } from './score';
-import type { Edge, Rank } from './types';
+import { score } from './score.ts';
+import type { Edge, Rank } from './types.js';
 
 // Greedy crossing reduction: swap neighbours within a rank and keep the swap
 // when the score does not get worse. Equal-score swaps can escape a plateau,

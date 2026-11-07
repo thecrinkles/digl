@@ -1,5 +1,7 @@
-import { digl, type Edge } from '../../src';
-import { score } from '../../src/score';
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { digl, type Edge } from '../../src/index.ts';
+import { score } from '../../src/score.ts';
 
 // A chain of k diamonds has 2^k paths; v2 walked every one of them.
 function diamonds(k: number): Edge[] {
@@ -24,30 +26,32 @@ function random(seed: number, nodes: number, edges: number): Edge[] {
 test('Large graph - chain of 30 diamonds', () => {
   const edges = diamonds(30);
   const [layout] = digl(edges);
-  expect(layout).toHaveLength(61);
-  expect(score(layout, edges)).toBe(0);
+  assert.equal(layout.length, 61);
+  assert.equal(score(layout, edges), 0);
 });
 
-test.each([1, 2, 3, 4, 5])('Random graph %i - valid layout', (seed) => {
-  const edges = random(seed, 40, 60);
-  const layouts = digl(edges);
+for (const seed of [1, 2, 3, 4, 5]) {
+  test(`Random graph ${seed} - valid layout`, () => {
+    const edges = random(seed, 40, 60);
+    const layouts = digl(edges);
 
-  // every node exactly once
-  const placed = layouts.flat(2).sort();
-  const nodes = [...new Set(edges.flatMap((e) => [e.source, e.target]))];
-  expect(placed).toEqual(nodes.sort());
+    // every node exactly once
+    const placed = layouts.flat(2).sort();
+    const nodes = [...new Set(edges.flatMap((e) => [e.source, e.target]))];
+    assert.deepEqual(placed, nodes.sort());
 
-  // no empty ranks, and no edge between two nodes of the same rank
-  for (const layout of layouts) {
-    for (const rank of layout) {
-      expect(rank.length).toBeGreaterThan(0);
-      const inRank = edges.filter(
-        (e) =>
-          e.source !== e.target &&
-          rank.includes(e.source) &&
-          rank.includes(e.target),
-      );
-      expect(inRank).toEqual([]);
+    // no empty ranks, and no edge between two nodes of the same rank
+    for (const layout of layouts) {
+      for (const rank of layout) {
+        assert.ok(rank.length > 0);
+        const inRank = edges.filter(
+          (e) =>
+            e.source !== e.target &&
+            rank.includes(e.source) &&
+            rank.includes(e.target),
+        );
+        assert.deepEqual(inRank, []);
+      }
     }
-  }
-});
+  });
+}

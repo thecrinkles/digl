@@ -44,6 +44,7 @@ Edges that skip ranks are compared by their two end ranks only. Unlike GraphViz,
 
 ## Upgrading from v2
 
+- The package is ESM-only, with an `exports` map and ES2022 output. `require('@crinkles/digl')` still works on Node 20.19+ and 22.12+, which can `require()` ES modules. Older CommonJS setups need `await import('@crinkles/digl')`.
 - Types are now exported: `Edge`, `Rank`, `Layout` and `Config`. `Layout` replaces `Graph`, and `digl` returns `Layout[]`.
 - `Rank` is `string[]` (was `(string | null)[]`), and `solitary` is optional.
 - Ranking no longer lists every path, which made v2 exponentially slow on branching graphs. Layouts of acyclic graphs are unchanged. Nodes in a cycle can now be placed in different ranks, where v2 sometimes put them in the same rank.

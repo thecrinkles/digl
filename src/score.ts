@@ -1,4 +1,4 @@
-import type { Edge, Rank } from './types';
+import type { Edge, Rank } from './types.js';
 
 // Number of edge pairs that cross. Two edges between the same pair of ranks
 // cross when their ends are in opposite order on those ranks. Edges within a

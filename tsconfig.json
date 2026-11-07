@@ -1,17 +1,16 @@
 {
-  "include": ["src"],
+  "include": ["src", "tests"],
   "compilerOptions": {
-    "lib": ["es2019"],
-    "target": "es2019",
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "target": "es2022",
+    "lib": ["es2022"],
+    "module": "nodenext",
+    "rewriteRelativeImportExtensions": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
     "strict": true,
-    "esModuleInterop": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "removeComments": true,
-    "types": ["jest"]
+    "types": ["node"],
+    "noEmit": true
   }
 }
