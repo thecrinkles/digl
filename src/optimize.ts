@@ -4,7 +4,7 @@ import type { Edge, Rank } from './types.js';
 // Greedy crossing reduction: swap neighbours within a rank and keep the swap
 // when the score does not get worse. Equal-score swaps can escape a plateau,
 // so one pass without improvement is allowed before stopping.
-// ponytail: full rescore per swap; score incrementally if large graphs matter.
+// Each swap rescores the whole layout, which gets slow for large graphs.
 export function optimize(ranks: Rank[], edges: readonly Edge[]): Rank[] {
   const result = ranks.map((rank) => [...rank]);
   let current = score(result, edges);

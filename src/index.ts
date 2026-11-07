@@ -30,8 +30,8 @@ export function digl(
 
   // Depth-first search; edges back to a node still being visited close a
   // cycle and are left out of the ranking.
-  // ponytail: recursion depth = longest path; use an explicit stack if graphs
-  // ever reach ~10k nodes deep.
+  // The recursion is as deep as the longest path, which is fine for graphs of
+  // up to ~10k nodes deep; beyond that an explicit stack is needed.
   const state = new Map<string, 'open' | 'done'>();
   const finished: string[] = [];
   const kept = new Map<string, string[]>(nodes.map((n) => [n, []]));
