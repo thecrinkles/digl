@@ -1,11 +1,12 @@
 export type Edge = { source: string; target: string };
-export type Node = { id: string; solitary?: boolean };
-export type Position = { x: number; y: number };
-export type Path = string[];
+
+/** Node ids on one row of a layout, in display order. */
+export type Rank = string[];
+
+/** One connected graph, as ranks from its start nodes downwards. */
+export type Layout = Rank[];
 
 export type Config = {
-  solitary: string[];
+  /** Node ids that each get a rank of their own. */
+  solitary?: readonly string[];
 };
-
-export type Rank = (string | null)[];
-export type Graph = Rank[][];

@@ -1,6 +1,7 @@
-import { Edge } from '../../src/types';
-import { digl } from '../../src/';
-import { score } from '../../src/score';
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { digl, type Edge } from '../../src/index.ts';
+import { score } from '../../src/score.ts';
 
 const edges: Edge[] = [
   { source: '1', target: '2' },
@@ -12,6 +13,6 @@ const edges: Edge[] = [
 
 test('Cyclic graph', () => {
   const result = digl(edges)[0];
-  expect(result).toEqual([['1'], ['2'], ['3', '4']]);
-  expect(score(result, edges)).toBe(0);
+  assert.deepEqual(result, [['1'], ['2'], ['3', '4']]);
+  assert.equal(score(result, edges), 0);
 });
