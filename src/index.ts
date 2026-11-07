@@ -1,7 +1,7 @@
-import { optimize } from './optimize';
-import type { Config, Edge, Layout, Rank } from './types';
+import { optimize } from './optimize.ts';
+import type { Config, Edge, Layout, Rank } from './types.js';
 
-export type { Config, Edge, Layout, Rank } from './types';
+export type { Config, Edge, Layout, Rank } from './types.js';
 
 // Lays out each connected graph in `edges` as ranks:
 // 1. Depth-first search from nodes without incoming edges (then from any node

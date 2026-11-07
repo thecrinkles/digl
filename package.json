@@ -2,21 +2,28 @@
   "name": "@crinkles/digl",
   "version": "2.0.3",
   "description": "Autolayout graphs",
+  "type": "module",
   "main": "dist/index.js",
-  "module": "dist/esm/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "files": [
     "dist"
   ],
   "packageManager": "pnpm@12.18.0",
   "scripts": {
-    "test": "jest",
-    "test:watch": "jest --watchAll --coverage",
-    "build": "rm -rf dist && rollup -c",
+    "test": "node --test \"tests/**/*.test.ts\"",
+    "test:watch": "node --test --watch \"tests/**/*.test.ts\"",
+    "typecheck": "tsc",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "prepack": "pnpm build",
     "format": "prettier --write .",
     "lint": "eslint . && prettier --check .",
-    "validate": "pnpm lint && pnpm test && pnpm build"
+    "validate": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "repository": {
     "type": "git",
@@ -33,18 +40,10 @@
     "url": "https://github.com/thecrinkles/digl/issues"
   },
   "homepage": "https://github.com/thecrinkles/digl#readme",
-  "jest": {
-    "preset": "ts-jest"
-  },
   "devDependencies": {
-    "@rollup/plugin-terser": "^1.0.2",
-    "@types/jest": "^30.0.0",
+    "@types/node": "^24.19.2",
     "eslint": "^10.14.0",
-    "jest": "^30.5.2",
     "prettier": "^3.9.10",
-    "rollup": "^4.67.5",
-    "rollup-plugin-typescript2": "^0.37.0",
-    "ts-jest": "^29.4.15",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.1"
   }

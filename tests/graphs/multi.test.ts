@@ -1,5 +1,7 @@
-import { digl, type Edge } from '../../src';
-import { score } from '../../src/score';
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { digl, type Edge } from '../../src/index.ts';
+import { score } from '../../src/score.ts';
 
 test('Multiple graphs - independent', () => {
   const edges: Edge[] = [
@@ -12,13 +14,13 @@ test('Multiple graphs - independent', () => {
   ];
   const result = digl(edges);
 
-  expect(result).toEqual([
+  assert.deepEqual(result, [
     [['1'], ['2'], ['3', '4']],
     [['5'], ['6'], ['7', '8']],
   ]);
 
-  expect(score(result[0], edges)).toBe(0);
-  expect(score(result[1], edges)).toBe(0);
+  assert.equal(score(result[0], edges), 0);
+  assert.equal(score(result[1], edges), 0);
 });
 
 test('Multiple graphs - simple connected', () => {
@@ -32,7 +34,7 @@ test('Multiple graphs - simple connected', () => {
   ];
   const result = digl(edges);
 
-  expect(result).toEqual([
+  assert.deepEqual(result, [
     [
       ['1', '5'],
       ['2', '6'],
@@ -40,7 +42,7 @@ test('Multiple graphs - simple connected', () => {
     ],
   ]);
 
-  expect(score(result[0], edges)).toBe(0);
+  assert.equal(score(result[0], edges), 0);
 });
 
 test('Multiple graphs - complex connected', () => {
@@ -57,7 +59,7 @@ test('Multiple graphs - complex connected', () => {
   ];
   const result = digl(edges);
 
-  expect(result).toEqual([
+  assert.deepEqual(result, [
     [
       ['1', '5', '8'],
       ['2', '6', '9'],
@@ -65,7 +67,7 @@ test('Multiple graphs - complex connected', () => {
     ],
   ]);
 
-  expect(score(result[0], edges)).toBe(0);
+  assert.equal(score(result[0], edges), 0);
 });
 
 test('Multiple graphs - one cyclic', () => {
@@ -80,10 +82,10 @@ test('Multiple graphs - one cyclic', () => {
     { source: '4', target: '3' },
   ];
   const result = digl(edges);
-  expect(result).toEqual([
+  assert.deepEqual(result, [
     [['4'], ['3']],
     [['•r'], ['0'], ['1'], ['2']],
   ]);
-  expect(score(result[0], edges)).toBe(0);
-  expect(score(result[1], edges)).toBe(0);
+  assert.equal(score(result[0], edges), 0);
+  assert.equal(score(result[1], edges), 0);
 });
