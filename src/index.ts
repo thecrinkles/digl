@@ -6,7 +6,7 @@ function getPathByNode(
   nodeId: string,
   edges: Edge[],
   path: Path = [],
-  paths: Path[] = []
+  paths: Path[] = [],
 ): Path[] {
   const children = edges.filter((e) => e.source === nodeId);
 
@@ -15,7 +15,7 @@ function getPathByNode(
   else if (!children || children.length === 0) paths.push([...path, nodeId]);
   else
     children.map((c) =>
-      getPathByNode(c.target, edges, [...path, nodeId], paths)
+      getPathByNode(c.target, edges, [...path, nodeId], paths),
     );
 
   return paths.sort();
@@ -92,7 +92,7 @@ function applySolitaryConfig(ranks: Rank[], config: Config) {
   const _ranks: Rank[] = [];
   ranks.forEach((rank) => {
     const solitaries = rank.filter((n) =>
-      config.solitary.includes(n as string)
+      config.solitary.includes(n as string),
     );
     if (!solitaries.length) _ranks.push(rank);
     else {

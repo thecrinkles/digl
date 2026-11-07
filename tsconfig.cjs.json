@@ -2,8 +2,6 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "target": "es2015",
-    "outDir": "./dist",
-    "rootDir": "./src",
     "declaration": true
   }
 }

@@ -3,16 +3,15 @@
   "compilerOptions": {
     "lib": ["es2019"],
     "target": "es2019",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "outDir": "./dist",
     "rootDir": "./src",
-    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "strictNullChecks": true,
-    "esModuleInterop": true,
-    "strict": true,
-    "allowSyntheticDefaultImports": true,
-    "allowJs": true,
     "removeComments": true,
+    "types": ["jest"]
   }
 }
