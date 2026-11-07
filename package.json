@@ -22,7 +22,7 @@
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "prepack": "pnpm build",
     "format": "prettier --write .",
-    "lint": "eslint . && prettier --check .",
+    "lint": "oxlint --deny-warnings && prettier --check .",
     "validate": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "repository": {
@@ -42,9 +42,8 @@
   "homepage": "https://github.com/thecrinkles/digl#readme",
   "devDependencies": {
     "@types/node": "^24.19.2",
-    "eslint": "^10.14.0",
+    "oxlint": "^1.91.0",
     "prettier": "^3.9.10",
-    "typescript": "~6.0.3",
-    "typescript-eslint": "^8.72.1"
+    "typescript": "^7.0.2"
   }
 }
