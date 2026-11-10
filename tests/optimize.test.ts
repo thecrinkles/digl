@@ -121,6 +121,23 @@ test('Optimize - wide ranks reach zero crossings', () => {
   assert.equal(score(optimize(ranks, edges), edges), 0);
 });
 
+// Swapping neighbours alone gets stuck at 2 crossings here
+test('Optimize - sweeps get past a local minimum', () => {
+  const ranks: Rank[] = [
+    ['1.1', '1.2', '1.3'],
+    ['2.1', '2.2', '2.3', '2.4'],
+  ];
+  const edges: Edge[] = [
+    { source: '1.1', target: '2.1' },
+    { source: '1.1', target: '2.2' },
+    { source: '1.1', target: '2.4' },
+    { source: '1.2', target: '2.2' },
+    { source: '1.2', target: '2.3' },
+    { source: '1.3', target: '2.2' },
+  ];
+  assert.equal(score(optimize(ranks, edges), edges), 0);
+});
+
 test('Optimize - does not mutate its input', () => {
   const input: Rank[] = [
     ['1.1', '1.2'],
