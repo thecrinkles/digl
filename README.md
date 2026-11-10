@@ -39,7 +39,7 @@ The algorithm is a simplified version of the one used by [GraphViz](https://www.
 2. Break cycles: a depth-first search starts from every node without incoming edges, then from any node not reached yet. Edges that lead back to a node still being visited close a cycle, and are ignored for ranking.
 3. Rank every node by its longest path from a start node. Start nodes are in rank 0.
 4. Add a placeholder to every rank an edge passes through, so every edge is split into segments between neighbouring ranks.
-5. Reduce crossing edges: swap neighbours (nodes or placeholders) within a rank, and keep the swap when it does not add crossings. This repeats until there are no crossings, or until a pass without improvement, followed by one extra pass, changes nothing.
+5. Reduce crossing edges: swap neighbours (nodes or placeholders) within a rank, and keep the swap when it does not add crossings. This repeats until there are no crossings, or until a pass without improvement, followed by one extra pass, changes nothing. Swapping alone easily gets stuck, so when crossings remain, it runs again from the order found by barycenter sweeps: eight passes, alternating downwards and upwards, that sort every rank by the average position of its neighbours in the previous rank. The layout with the fewest crossings wins.
 
 Ranking takes time proportional to the number of nodes plus edges. Each swap only recounts the crossings of the two swapped slots.
 
@@ -56,6 +56,7 @@ The score of a layout is the number of segment pairs that cross. Two segments be
 - Ranking no longer lists every path, which made v2 exponentially slow on branching graphs. Layouts of acyclic graphs are unchanged. Nodes in a cycle can now be placed in different ranks, where v2 sometimes put them in the same rank.
 - Crossings are counted correctly when two ranks hold more than 10 nodes. v2 compared positions as text, so layouts of wide graphs can change, with fewer crossings.
 - Edges within a rank are no longer scored; the ranking never produces them.
+- Crossing reduction also tries barycenter sweeps. Layouts that still had crossings can change, but never to more crossings than swapping alone.
 
 ## Examples
 
